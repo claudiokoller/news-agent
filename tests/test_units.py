@@ -42,3 +42,38 @@ def test_split_message_teilt_an_zeilenumbruch():
     assert len(parts) > 1
     assert all(len(p) <= 4000 for p in parts)
     assert "".join(p.replace("\n", "") for p in parts) == text.replace("\n", "")
+
+
+# ─── Textextraktion ──────────────────────────────────────────────────────────
+# Regressionstests: Claude stellt bei Bedarf einen ThinkingBlock voran. Wer
+# blind content[0].text liest, bekommt dann einen AttributeError und damit
+# an manchen Tagen gar kein Briefing.
+
+class _Block:
+    def __init__(self, type, text=None):
+        self.type = type
+        if text is not None:
+            self.text = text
+
+
+class _Response:
+    def __init__(self, *blocks):
+        self.content = list(blocks)
+
+
+def test_extract_text_bei_reinem_textblock():
+    from summarizer import _extract_text
+    assert _extract_text(_Response(_Block("text", "Briefing"))) == "Briefing"
+
+
+def test_extract_text_ueberspringt_vorangestellten_thinking_block():
+    from summarizer import _extract_text
+    antwort = _Response(_Block("thinking"), _Block("text", "Briefing"))
+    assert _extract_text(antwort) == "Briefing"
+
+
+def test_extract_text_meldet_fehlenden_textblock():
+    import pytest
+    from summarizer import _extract_text
+    with pytest.raises(ValueError):
+        _extract_text(_Response(_Block("thinking")))

@@ -20,7 +20,7 @@ flowchart LR
         MAIN --> RSS --> SUM --> TG
     end
 
-    FEEDS[(11 RSS-Feeds<br/>Schweiz · Makro<br/>Märkte · Bitcoin)] -.->|HTTP| RSS
+    FEEDS[(10 RSS-Feeds<br/>Schweiz · Makro<br/>Märkte · Bitcoin)] -.->|HTTP| RSS
     SUM <-.->|Messages API| CLAUDE{{Claude API}}
     TG -.->|Bot API| USER([Telegram Chat])
 ```
@@ -29,11 +29,11 @@ flowchart LR
 
 | # | Schritt | Modul | Was passiert |
 |---|---------|-------|--------------|
-| 1 | **Fetch** | `rss_fetcher.py` | Alle Feeds werden nacheinander geparst. Ein Feed, der nicht erreichbar ist, wird geloggt und übersprungen – die Pipeline läuft weiter. |
+| 1 | **Fetch** | `rss_fetcher.py` | Alle Feeds werden nacheinander geparst, mit 15 s Timeout und einem Browser-User-Agent (manche Quellen blocken den Default). Ein Feed, der nicht erreichbar ist oder nichts liefert, wird geloggt und übersprungen – die Pipeline läuft weiter. |
 | 2 | **Filter** | `rss_fetcher.py` | Nur Artikel der letzten 20 Stunden, max. 5 pro Feed. HTML wird aus dem Teaser entfernt und auf 500 Zeichen gekürzt. |
 | 3 | **Normalisieren** | `rss_fetcher.py` | Jeder Artikel wird zu einem `Article`-Dataclass (Titel, Quelle, Kategorie, Teaser, URL, Uhrzeit). |
 | 4 | **Prompting** | `summarizer.py` | Artikel werden nach Kategorie gruppiert als kompakter Text aufbereitet und mit einem System-Prompt an Claude geschickt. |
-| 5 | **Generierung** | `summarizer.py` | Claude erzeugt das fertige Briefing in Telegram-HTML, inkl. Inline-Quellenlinks. |
+| 5 | **Generierung** | `summarizer.py` | Claude erzeugt das fertige Briefing in Telegram-HTML, inkl. Inline-Quellenlinks. Aus der Antwort wird der erste Textblock gelesen – vorangestellte Denkblöcke werden übersprungen. |
 | 6 | **Versand** | `tg.py` | Nachricht wird bei Bedarf an Zeilenumbrüchen gesplittet und via Bot API zugestellt. |
 
 ## Designentscheidungen
@@ -55,9 +55,23 @@ Artikel → Lauf sauber beenden. API-Fehler → loggen, nichts senden. Telegram 
 das HTML ab → Fallback auf Plain Text. Ein einzelner Fehler kostet nie das ganze
 Briefing.
 
+Zwei Fallstricke stecken im Detail: ein Feed ohne Timeout kann den Cron-Lauf
+unbegrenzt blockieren, und ein Feed, der still auf null Einträge fällt, wirft
+keine Exception – er verschwindet einfach aus dem Briefing. Beides ist deshalb
+explizit behandelt.
+
 **Zustandslos.**
 Jeder Lauf ist unabhängig. Das Zeitfenster ersetzt eine "schon gesehen"-Datenbank –
 gut genug für einen täglichen Rhythmus und spart die gesamte Persistenzschicht.
+
+**Zwei Details, die man nur im Betrieb sieht.**
+Ein zu knappes `max_tokens` schneidet das Briefing ab, ohne dass ein Fehler
+entsteht – die Antwort kommt einfach mitten im Satz zu Ende. Das Limit ist
+deshalb grosszügig gesetzt (abgerechnet wird nur, was erzeugt wird) und ein
+`stop_reason` von `max_tokens` landet als Warnung im Log. Und weil Claude vor
+der Antwort denken kann, ist der erste Block der Antwort nicht zwingend Text –
+`_extract_text()` sucht deshalb gezielt den Textblock, statt blind den ersten
+zu nehmen. Beide Fälle sind durch Tests abgedeckt.
 
 ## Erweiterungspunkte
 

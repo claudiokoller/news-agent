@@ -5,6 +5,7 @@ Lädt Artikel von RSS-Feeds und filtert relevante Inhalte.
 
 import feedparser
 import logging
+import socket
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 
@@ -14,11 +15,10 @@ logger = logging.getLogger(__name__)
 
 FEEDS = [
     # Schweiz & Lokal
-    {"url": "https://www.cash.ch/rss/news",                              "kategorie": "Schweiz", "name": "Cash.ch",      "link": "https://cash.ch"},
     {"url": "https://www.srf.ch/news/bnf/rss/1646",                      "kategorie": "Schweiz", "name": "SRF Wirtschaft","link": "https://srf.ch/news/wirtschaft"},
     {"url": "https://www.nzz.ch/wirtschaft.rss",                         "kategorie": "Schweiz", "name": "NZZ",          "link": "https://nzz.ch/wirtschaft"},
     # Makro & Wirtschaft
-    {"url": "https://feeds.reuters.com/reuters/businessNews",            "kategorie": "Makro",   "name": "Reuters",      "link": "https://reuters.com/business"},
+    {"url": "https://finance.yahoo.com/news/rssindex",                   "kategorie": "Makro",   "name": "Yahoo Finance","link": "https://finance.yahoo.com/news"},
     {"url": "https://www.handelsblatt.com/contentexport/feed/top-themen","kategorie": "Makro",   "name": "Handelsblatt", "link": "https://handelsblatt.com"},
     {"url": "https://www.economist.com/finance-and-economics/rss.xml",   "kategorie": "Makro",   "name": "Economist",    "link": "https://economist.com/finance-and-economics"},
     # Märkte
@@ -34,6 +34,13 @@ FEEDS = [
 MAX_PER_FEED   = 5
 # Nur Artikel der letzten X Stunden
 HOURS_BACK     = 20
+# Ohne Timeout blockiert ein haengender Server den ganzen Cron-Lauf
+FEED_TIMEOUT   = 15
+# Manche Feeds (z.B. Bitcoin Magazine) blocken den Default-UA von feedparser
+USER_AGENT     = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/122.0 Safari/537.36"
+)
 
 
 @dataclass
@@ -50,6 +57,7 @@ def fetch_all_articles() -> list[Article]:
     """Holt Artikel von allen konfigurierten Feeds."""
     all_articles = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS_BACK)
+    socket.setdefaulttimeout(FEED_TIMEOUT)
 
     for feed_cfg in FEEDS:
         try:
@@ -63,8 +71,17 @@ def fetch_all_articles() -> list[Article]:
 
 
 def _fetch_feed(feed_cfg: dict, cutoff: datetime) -> list[Article]:
-    feed     = feedparser.parse(feed_cfg["url"])
+    feed     = feedparser.parse(feed_cfg["url"], agent=USER_AGENT)
     articles = []
+
+    # Ein leerer Feed wirft keine Exception - sonst faellt eine tote
+    # Quelle monatelang nicht auf, weil einfach nichts im Briefing steht.
+    if not feed.entries:
+        logger.warning(
+            f"Feed {feed_cfg['name']} lieferte keine Eintraege "
+            f"(HTTP {getattr(feed, 'status', '?')})"
+        )
+        return []
 
     for entry in feed.entries[:MAX_PER_FEED * 2]:  # Mehr holen, dann filtern
         # Datum prüfen
@@ -120,6 +137,6 @@ def _strip_html(text: str) -> str:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     articles = fetch_all_articles()
-    print(f"\n📰 {len(articles)} Artikel gefunden:\n")
+    print(f"\n {len(articles)} Artikel gefunden:\n")
     for a in articles:
         print(f"  [{a.kategorie}] {a.quelle}: {a.titel[:70]}")

@@ -106,19 +106,37 @@ def summarize_articles(articles: list[Article]) -> str | None:
 
     try:
         response = _client().messages.create(
-            model      = "claude-sonnet-4-6",
-            max_tokens = 1500,
+            model      = "claude-sonnet-5",
+            # Grosszuegig: das Limit deckt Denk- und Textanteil ab. Abgerechnet
+            # wird nur, was tatsaechlich erzeugt wird - ein hoher Wert kostet nichts.
+            max_tokens = 16000,
             system     = SYSTEM_PROMPT,
             messages   = [{"role": "user", "content": prompt}],
         )
 
-        briefing = _fix_html(response.content[0].text.strip())
+        if response.stop_reason == "max_tokens":
+            logger.warning("max_tokens erreicht - Briefing ist abgeschnitten")
+
+        briefing = _fix_html(_extract_text(response).strip())
         logger.info(f"Briefing generiert ({len(briefing)} Zeichen)")
         return briefing
 
     except Exception as e:
         logger.error(f"Claude API Fehler: {e}")
         return None
+
+
+def _extract_text(response) -> str:
+    """Holt den Text aus der Antwort.
+
+    content[0] ist nicht zwingend der Text: Claude denkt bei Bedarf vor der
+    Antwort, dann steht an erster Stelle ein ThinkingBlock. Darum den ersten
+    echten Textblock suchen.
+    """
+    for block in response.content:
+        if block.type == "text":
+            return block.text
+    raise ValueError("Antwort enthielt keinen Textblock")
 
 
 def _fix_html(text: str) -> str:
@@ -154,7 +172,7 @@ if __name__ == "__main__":
     articles = fetch_all_articles()
 
     if not articles:
-        print("❌ Keine Artikel")
+        print("Keine Artikel")
     else:
         briefing = summarize_articles(articles)
         print("\n" + "─" * 50)

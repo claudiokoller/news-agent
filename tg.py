@@ -56,7 +56,7 @@ async def send_briefing(text: str):
                 text    = part,
             )
 
-    logger.info(f"✅ Telegram Nachricht gesendet ({len(parts)} Teil(e))")
+    logger.info(f"Telegram Nachricht gesendet ({len(parts)} Teil(e))")
 
 
 # ─── Test ────────────────────────────────────────────────────────────────────

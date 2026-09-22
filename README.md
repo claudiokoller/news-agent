@@ -1,7 +1,7 @@
 # 📰 News Agent
 
 Ein kleiner Python-Agent, der jeden Morgen um 07:00 die Wirtschaftsnachrichten aus
-11 RSS-Feeds einsammelt, sie von **Claude** zu einem kompakten Briefing verdichten
+10 RSS-Feeds einsammelt, sie von **Claude** zu einem kompakten Briefing verdichten
 lässt und das Ergebnis per **Telegram** zustellt.
 
 Statt zehn News-Apps durchzuscrollen: eine Nachricht, 60 Sekunden Lesezeit, mit
@@ -13,14 +13,17 @@ Direktlinks zu den Originalartikeln.
 
 ## Was er macht
 
-- **11 Quellen**, gruppiert in vier Sektionen – Schweiz (NZZ, SRF, Cash), Makro
-  (Reuters, Handelsblatt, Economist), Märkte (Bloomberg, Investing) und Bitcoin.
+- **10 Quellen**, gruppiert in vier Sektionen – Schweiz (NZZ, SRF), Makro
+  (Yahoo Finance, Handelsblatt, Economist), Märkte (Bloomberg, Investing) und
+  Bitcoin (Bitcoin Magazine, CoinTelegraph, CoinDesk).
 - **Zeitfenster-Filter:** nur Artikel der letzten 20 Stunden, max. 5 pro Feed.
   Hält den Prompt klein und die Kosten pro Lauf im Rappenbereich.
 - **Ein LLM-Call pro Tag:** Claude priorisiert, kürzt und formatiert in einem Schritt.
 - **Telegram-HTML** mit Inline-Quellenlinks, automatischem Splitting langer
   Nachrichten und Plain-Text-Fallback.
-- **Fehlertolerant:** ein nicht erreichbarer Feed kippt nie den ganzen Lauf.
+- **Fehlertolerant:** ein nicht erreichbarer Feed kippt nie den ganzen Lauf – mit
+  Timeout gegen hängende Server und einer Warnung im Log, wenn eine Quelle
+  nichts mehr liefert.
 
 ## Beispiel-Ausgabe
 
@@ -63,7 +66,7 @@ flowchart LR
     RSS --> SUM[summarizer.py]
     SUM --> TG[tg.py]
 
-    FEEDS[(11 RSS-Feeds)] -.-> RSS
+    FEEDS[(10 RSS-Feeds)] -.-> RSS
     SUM <-.-> CLAUDE{{Claude API}}
     TG -.-> USER([Telegram])
 ```
@@ -133,8 +136,9 @@ pip install pytest
 pytest
 ```
 
-Getestet sind die Funktionen, die ohne Netzwerk auskommen: HTML-Stripping,
-Entity-Escaping und das Nachrichten-Splitting.
+Getestet sind die Funktionen, die ohne Netzwerk und ohne API-Key auskommen:
+HTML-Stripping, Entity-Escaping, Nachrichten-Splitting und die Textextraktion
+aus der Claude-Antwort.
 
 ## Konfiguration anpassen
 

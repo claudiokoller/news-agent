@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 async def run():
-    logger.info("▶️  News Agent gestartet")
+    logger.info("News Agent gestartet")
 
     # 1. Artikel von allen Quellen holen
     articles = fetch_all_articles()
@@ -39,7 +39,7 @@ async def run():
 
     # 3. Via Telegram senden
     await send_briefing(briefing)
-    logger.info("✅ Briefing gesendet")
+    logger.info("Briefing gesendet")
 
 
 if __name__ == "__main__":
