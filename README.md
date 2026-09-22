@@ -1,61 +1,11 @@
 # 📰 News Agent
 
-Ein kleiner Python-Agent, der jeden Morgen um 07:00 die Wirtschaftsnachrichten aus
-10 RSS-Feeds einsammelt, sie von **Claude** zu einem kompakten Briefing verdichten
-lässt und das Ergebnis per **Telegram** zustellt.
+Ein Python-Agent, der jeden Morgen um 07:00 Wirtschaftsnachrichten aus 10 RSS-Feeds
+einsammelt, sie von **Claude** zu einem Briefing zusammenfassen lässt und es per
+**Telegram** zustellt.
 
 Statt zehn News-Apps durchzuscrollen: eine Nachricht, 60 Sekunden Lesezeit, mit
-Direktlinks zu den Originalartikeln.
-
-> Entstanden als persönliches Wochenend-Projekt und seither täglich im Einsatz.
-
----
-
-## Was er macht
-
-- **10 Quellen**, gruppiert in vier Sektionen – Schweiz (NZZ, SRF), Makro
-  (Yahoo Finance, Handelsblatt, Economist), Märkte (Bloomberg, Investing) und
-  Bitcoin (Bitcoin Magazine, CoinTelegraph, CoinDesk).
-- **Zeitfenster-Filter:** nur Artikel der letzten 20 Stunden, max. 5 pro Feed.
-  Hält den Prompt klein und die Kosten pro Lauf im Rappenbereich.
-- **Ein LLM-Call pro Tag:** Claude priorisiert, kürzt und formatiert in einem Schritt.
-- **Telegram-HTML** mit Inline-Quellenlinks, automatischem Splitting langer
-  Nachrichten und Plain-Text-Fallback.
-- **Fehlertolerant:** ein nicht erreichbarer Feed kippt nie den ganzen Lauf – mit
-  Timeout gegen hängende Server und einer Warnung im Log, wenn eine Quelle
-  nichts mehr liefert.
-
-## Beispiel-Ausgabe
-
-```
-☀️ Guten Morgen!
-
-Die Märkte sind wach, der Kaffee ist heiss – legen wir los.
-
-Montag, 22. September 2026
-━━━━━━━━━━━━━━━
-
-🇨🇭 SCHWEIZ
-• Die SNB belässt den Leitzins bei 0.25% und verweist auf die
-  abgeschwächte Teuerung. — NZZ
-• Der Pharmakonzern meldet ein Umsatzplus von 6% im dritten
-  Quartal. — Cash.ch
-
-🌍 MAKRO
-• Die EZB signalisiert eine längere Zinspause. — Reuters
-
-📈 MÄRKTE
-• Der SMI schliesst 0.8% höher, getrieben von Finanzwerten. — Bloomberg
-
-💡 Daily Fun Fact
-• Honig verdirbt nie – in ägyptischen Gräbern gefundene Töpfe
-  waren nach 3000 Jahren noch geniessbar.
-
-━━━━━━━━━━━━━━━
-Guten Start in die Woche!
-```
-
-*(Beispiel mit erfundenen Zahlen.)*
+Links zu den Originalartikeln. Persönliches Projekt, seither täglich im Einsatz.
 
 ## Architektur
 
@@ -71,22 +21,42 @@ flowchart LR
     TG -.-> USER([Telegram])
 ```
 
-Eine lineare Pipeline ohne Server, ohne Datenbank, ohne laufenden Prozess – Cron
+Eine lineare Pipeline: kein Server, keine Datenbank, kein laufender Prozess. Cron
 startet das Skript, nach dem Versand beendet es sich wieder.
 
-📄 **[Ausführliche Architektur, Ablauf und Designentscheidungen →](docs/architecture.md)**
+→ **[Details zur Architektur](docs/architecture.md)**
 
-## Projektstruktur
+## Beispiel
 
 ```
-news_agent/
-├── main.py           # Orchestrierung der drei Schritte
-├── rss_fetcher.py    # Feeds laden, filtern, als Article-Dataclass normalisieren
-├── summarizer.py     # Prompt bauen, Claude API, Telegram-HTML nachbessern
-├── tg.py             # Versand inkl. Splitting und Fallback
-├── tests/            # Unit-Tests für die Hilfsfunktionen
-└── docs/             # Architekturdokumentation
+☀️ Guten Morgen!
+
+Die Märkte sind wach, der Kaffee ist heiss – legen wir los.
+
+🇨🇭 SCHWEIZ
+• Die SNB belässt den Leitzins bei 0.25%. — NZZ
+
+🌍 MAKRO
+• Die EZB signalisiert eine längere Zinspause. — Handelsblatt
+
+📈 MÄRKTE
+• Der SMI schliesst 0.8% höher. — Bloomberg
+
+💡 Daily Fun Fact
+• Honig verdirbt nie – in ägyptischen Gräbern gefundene Töpfe
+  waren nach 3000 Jahren noch geniessbar.
 ```
+
+*(Beispiel mit erfundenen Zahlen.)*
+
+## Module
+
+| Datei | Aufgabe |
+|---|---|
+| `main.py` | Orchestriert die drei Schritte |
+| `rss_fetcher.py` | Feeds laden und filtern (letzte 20 h, max. 5 pro Feed) |
+| `summarizer.py` | Prompt bauen und Claude API aufrufen |
+| `tg.py` | Versand via Telegram |
 
 ## Setup
 
@@ -97,33 +67,14 @@ cd news_agent
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env    # und die drei Werte eintragen
+cp .env.example .env    # API-Key und Telegram-Daten eintragen
 python main.py
 ```
 
-### Benötigte Zugangsdaten
+Die drei Zugangsdaten stehen in der `.env` – wo man sie herbekommt, erklärt
+[`.env.example`](.env.example). Die Datei selbst ist nie Teil des Repos.
 
-| Variable | Woher |
-|---|---|
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| `NEWS_TELEGRAM_TOKEN` | Bot bei [@BotFather](https://t.me/BotFather) erstellen |
-| `NEWS_TELEGRAM_CHAT_ID` | via [@userinfobot](https://t.me/userinfobot) auslesen |
-
-Alle drei liegen in der lokalen `.env` – die Datei ist bewusst nie Teil des Repos.
-
-### Module einzeln testen
-
-Jedes Modul hat einen eigenen Einstiegspunkt, praktisch beim Entwickeln:
-
-```bash
-python rss_fetcher.py   # zeigt nur die gefundenen Artikel
-python summarizer.py    # baut das Briefing, sendet es aber nicht
-python tg.py            # schickt eine Testnachricht
-```
-
-## Täglicher Betrieb
-
-Ein Crontab-Eintrag genügt:
+Für den täglichen Betrieb genügt ein Crontab-Eintrag:
 
 ```cron
 0 7 * * * /usr/bin/python3 /pfad/zu/news_agent/main.py >> /var/log/news_agent.log 2>&1
@@ -132,29 +83,11 @@ Ein Crontab-Eintrag genügt:
 ## Tests
 
 ```bash
-pip install pytest
-pytest
+pip install pytest && pytest
 ```
 
-Getestet sind die Funktionen, die ohne Netzwerk und ohne API-Key auskommen:
-HTML-Stripping, Entity-Escaping, Nachrichten-Splitting und die Textextraktion
-aus der Claude-Antwort.
-
-## Konfiguration anpassen
-
-| Was | Wo |
-|---|---|
-| Quellen hinzufügen / entfernen | `FEEDS` in `rss_fetcher.py` |
-| Zeitfenster und Artikel pro Feed | `HOURS_BACK`, `MAX_PER_FEED` in `rss_fetcher.py` |
-| Ton, Sprache, Sektionen, Länge | `SYSTEM_PROMPT` in `summarizer.py` |
-
-## Tech-Stack
-
-Python 3.10+ · [feedparser](https://pypi.org/project/feedparser/) ·
-[anthropic](https://pypi.org/project/anthropic/) ·
-[python-telegram-bot](https://python-telegram-bot.org/) ·
-[python-dotenv](https://pypi.org/project/python-dotenv/)
+Getestet sind die Funktionen, die ohne Netzwerk und ohne API-Key laufen.
 
 ## Lizenz
 
-[MIT](LICENSE) – gerne kopieren, anpassen und selbst laufen lassen.
+[MIT](LICENSE)
