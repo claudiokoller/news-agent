@@ -9,11 +9,18 @@ import re
 import logging
 from datetime import datetime
 from anthropic import Anthropic
+from dotenv import load_dotenv
 from rss_fetcher import Article
 
 logger = logging.getLogger(__name__)
 
-client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+load_dotenv()
+
+
+def _client() -> Anthropic:
+    """Client erst beim Aufruf erzeugen - so bleibt das Modul ohne
+    gesetzten API-Key importierbar (z.B. in den Tests)."""
+    return Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 SYSTEM_PROMPT = """
 Du bist ein freundlicher, gut gelaunter Wirtschaftsjournalist aus der Schweiz. Du schreibst jeden Morgen ein persönliches Briefing für einen jungen Schweizer Investor.
@@ -98,7 +105,7 @@ def summarize_articles(articles: list[Article]) -> str | None:
     )
 
     try:
-        response = client.messages.create(
+        response = _client().messages.create(
             model      = "claude-sonnet-4-6",
             max_tokens = 1500,
             system     = SYSTEM_PROMPT,

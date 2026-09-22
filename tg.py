@@ -1,7 +1,7 @@
 """
 news_agent/tg.py
-Sendet das Briefing via Telegram.
-Separater Bot / Chat vom Invoice Agent.
+Sendet das fertige Briefing via Telegram Bot API.
+Lange Nachrichten werden automatisch in mehrere Teile gesplittet.
 """
 
 import os
@@ -9,14 +9,11 @@ import logging
 import asyncio
 from telegram import Bot
 from telegram.constants import ParseMode
-import html
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-# Eigener Bot für News (separater Chat vom Invoice Agent)
-TELEGRAM_TOKEN   = os.environ["NEWS_TELEGRAM_TOKEN"]
-TELEGRAM_CHAT_ID = os.environ["NEWS_TELEGRAM_CHAT_ID"]
-
+load_dotenv()
 
 TELEGRAM_MAX_LEN = 4000
 
@@ -39,13 +36,15 @@ def _split_message(text: str) -> list[str]:
 
 async def send_briefing(text: str):
     """Sendet das fertige Briefing via Telegram (splittet bei Bedarf)."""
-    bot = Bot(token=TELEGRAM_TOKEN)
-    parts = _split_message(text)
+    # Credentials erst hier lesen (siehe .env.example)
+    bot     = Bot(token=os.environ["NEWS_TELEGRAM_TOKEN"])
+    chat_id = os.environ["NEWS_TELEGRAM_CHAT_ID"]
+    parts   = _split_message(text)
 
     for part in parts:
         try:
             await bot.send_message(
-                chat_id                  = TELEGRAM_CHAT_ID,
+                chat_id                  = chat_id,
                 text                     = part,
                 parse_mode               = ParseMode.HTML,
                 disable_web_page_preview = True,
@@ -53,7 +52,7 @@ async def send_briefing(text: str):
         except Exception as e:
             logger.warning(f"HTML fehlgeschlagen, sende als plain text: {e}")
             await bot.send_message(
-                chat_id = TELEGRAM_CHAT_ID,
+                chat_id = chat_id,
                 text    = part,
             )
 
