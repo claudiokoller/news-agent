@@ -1,8 +1,8 @@
 # 📰 News Agent
 
-Ein Python-Agent, der jeden Morgen um 07:00 Wirtschaftsnachrichten aus 10 RSS-Feeds
-einsammelt, sie von **Claude** zu einem Briefing zusammenfassen lässt und es per
-**Telegram** zustellt.
+Ein kleines Python-Programm, das jeden Morgen um 07:00 Wirtschaftsnachrichten aus
+10 RSS-Feeds einsammelt, sie von **Claude** zu einem Briefing zusammenfassen lässt
+und es per **Telegram** verschickt.
 
 Statt zehn News-Apps durchzuscrollen: eine Nachricht, 60 Sekunden Lesezeit, mit
 Links zu den Originalartikeln. Persönliches Projekt, seither täglich im Einsatz.
@@ -21,8 +21,8 @@ flowchart LR
     TG -.-> USER([Telegram])
 ```
 
-Eine lineare Pipeline: kein Server, keine Datenbank, kein laufender Prozess. Cron
-startet das Skript, nach dem Versand beendet es sich wieder.
+Vier Schritte nacheinander – kein Server, keine Datenbank, kein dauerhaft laufendes
+Programm. Cron startet das Skript, nach dem Versand beendet es sich wieder.
 
 → **[Details zur Architektur](docs/architecture.md)**
 
@@ -53,7 +53,7 @@ Die Märkte sind wach, der Kaffee ist heiss – legen wir los.
 
 | Datei | Aufgabe |
 |---|---|
-| `main.py` | Orchestriert die drei Schritte |
+| `main.py` | Ruft die drei Schritte nacheinander auf |
 | `rss_fetcher.py` | Feeds laden und filtern (letzte 20 h, max. 5 pro Feed) |
 | `summarizer.py` | Prompt bauen und Claude API aufrufen |
 | `tg.py` | Versand via Telegram |
