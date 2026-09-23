@@ -1,5 +1,5 @@
 """
-news_agent/rss_fetcher.py
+news-agent/rss_fetcher.py
 Lädt Artikel von RSS-Feeds und filtert relevante Inhalte.
 """
 

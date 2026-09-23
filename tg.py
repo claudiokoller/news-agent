@@ -1,5 +1,5 @@
 """
-news_agent/tg.py
+news-agent/tg.py
 Sendet das fertige Briefing via Telegram Bot API.
 Lange Nachrichten werden automatisch in mehrere Teile gesplittet.
 """

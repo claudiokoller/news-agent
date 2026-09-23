@@ -1,10 +1,10 @@
 """
-news_agent/main.py
+news-agent/main.py
 Tägliches Wirtschafts-Briefing via Telegram.
 Läuft jeden Morgen um 07:00 via Cronjob.
 
 Crontab:
-0 7 * * * /usr/bin/python3 /home/user/news_agent/main.py >> /var/log/news_agent.log 2>&1
+0 7 * * * /usr/bin/python3 /home/user/news-agent/main.py >> /var/log/news-agent.log 2>&1
 """
 
 import asyncio

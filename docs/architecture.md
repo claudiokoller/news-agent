@@ -8,7 +8,7 @@ Scheduling übernimmt Cron.
 flowchart LR
     CRON([Cron<br/>07:00 täglich]) --> MAIN
 
-    subgraph AGENT [news_agent]
+    subgraph AGENT [news-agent]
         direction TB
         MAIN[main.py<br/>Orchestrierung]
         RSS[rss_fetcher.py<br/>Sammeln + Filtern]

@@ -61,8 +61,8 @@ Die Märkte sind wach, der Kaffee ist heiss – legen wir los.
 ## Setup
 
 ```bash
-git clone https://github.com/claudiokoller/news_agent.git
-cd news_agent
+git clone https://github.com/claudiokoller/news-agent.git
+cd news-agent
 
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -77,7 +77,7 @@ Die drei Zugangsdaten stehen in der `.env` – wo man sie herbekommt, erklärt
 Für den täglichen Betrieb genügt ein Crontab-Eintrag:
 
 ```cron
-0 7 * * * /usr/bin/python3 /pfad/zu/news_agent/main.py >> /var/log/news_agent.log 2>&1
+0 7 * * * /usr/bin/python3 /pfad/zu/news-agent/main.py >> /var/log/news-agent.log 2>&1
 ```
 
 ## Tests

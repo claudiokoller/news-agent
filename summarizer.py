@@ -1,5 +1,5 @@
 """
-news_agent/summarizer.py
+news-agent/summarizer.py
 Nutzt Claude API um die gesammelten Artikel zu einem
 kompakten Wirtschafts-Briefing zusammenzufassen.
 """
