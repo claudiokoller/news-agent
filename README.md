@@ -8,7 +8,7 @@ Läuft täglich per Cron auf einem kleinen Linux-Server.
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-## Was der Agent macht
+## Was es macht
 
 1. **Sammeln** – 10 RSS-Feeds aus vier Bereichen: Schweiz, Makro, Märkte, Bitcoin.
 2. **Filtern** – nur Artikel der letzten 20 Stunden, höchstens 5 pro Quelle.
